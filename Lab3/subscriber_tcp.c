@@ -14,6 +14,7 @@
 #define BUFFER_SIZE 1024
 
 int main(int argc, char *argv[]) {
+    sleep(1);
     if (argc != 3) {
         printf("Uso: %s <IP_BROKER> <PUERTO>\n", argv[0]);
         exit(1);
@@ -49,7 +50,9 @@ int main(int argc, char *argv[]) {
     topic[strcspn(topic, "\n")] = '\0';
 
     // Enviar tema al broker
-    send(sock, topic, strlen(topic), 0);
+    char msg[120];
+    snprintf(msg, sizeof(msg), "SUBSCRIBE %s", topic);
+    send(sock, msg, strlen(msg), 0);
 
     printf("Esperando mensajes...\n");
     while (1) {

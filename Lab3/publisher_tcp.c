@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     char out[BUF_SIZE];
     for (int i = 1; i <= DEFAULT_MSGS; ++i) {
         // Construimos el mensaje según formato: PUB|TOPIC|[ID] mensaje i\n
-        int n = snprintf(out, sizeof(out), "PUB|%s|[%s] mensaje %d\n", topic, pub_id, i);
+        int n = snprintf(out, sizeof(out), "PUBLISH %s [%s] mensaje %d", topic, pub_id, i);
         if (n < 0) {
             fprintf(stderr, "Error al formar el mensaje\n");
             break;
