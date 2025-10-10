@@ -56,7 +56,10 @@ int main(int argc, char *argv[]) {
     topic[strcspn(topic, "\n")] = '\0';
 
     // Enviar suscripción al broker
-    sendto(sock, topic, strlen(topic), 0, (struct sockaddr *)&broker_addr, addr_len);
+    char subscribe_msg[120];
+    sprintf(subscribe_msg, "SUBSCRIBE %s", topic);
+    sendto(sock, subscribe_msg, strlen(subscribe_msg), 0,
+        (struct sockaddr *)&broker_addr, addr_len);
     printf("Suscripción enviada al broker UDP %s:%d\n", ip, port);
 
     printf("Esperando mensajes...\n");
