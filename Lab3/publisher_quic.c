@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <unistd.h>
 #include <msquic.h>
 
 #define BUF_SIZE 1024
@@ -40,14 +41,22 @@ static QUIC_STATUS QUIC_API ConnectionCallback(HQUIC Connection, void *Context, 
 }
 
 int main(int argc, char **argv) {
+    const char *server;
+    uint16_t port;
+    const char *topic;
+    const char *pub_id;
     if (argc < 5) {
-        fprintf(stderr, "Usage: %s <broker_ip> <port> <TOPIC> <PUBLISHER_ID>\n", argv[0]);
-        return 1;
+        fprintf(stderr, "[publisher_quic] Using defaults: 127.0.0.1 8080 A_vs_B P1\n");
+        server = "127.0.0.1";
+        port = 8080;
+        topic = "A_vs_B";
+        pub_id = "P1";
+    } else {
+        server = argv[1];
+        port = (uint16_t)atoi(argv[2]);
+        topic = argv[3];
+        pub_id = argv[4];
     }
-    const char *server = argv[1];
-    uint16_t port = (uint16_t)atoi(argv[2]);
-    const char *topic = argv[3];
-    const char *pub_id = argv[4];
 
     if (MsQuicOpen(&MsQuic) != QUIC_STATUS_SUCCESS) return 1;
     QUIC_REGISTRATION_CONFIG regConfig = { "publisher-quic", QUIC_EXECUTION_PROFILE_LOW_LATENCY };
@@ -81,7 +90,7 @@ int main(int argc, char **argv) {
         buf.Length = (uint32_t)n;
         buf.Buffer = (uint8_t *)out;
         MsQuic->StreamSend(Stream, &buf, 1, QUIC_SEND_FLAG_ALLOW_0_RTT, NULL);
-        Sleep(1000);
+        sleep(1);
     }
 
     MsQuic->StreamShutdown(Stream, QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, 0);

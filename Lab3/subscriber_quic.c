@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <unistd.h>
 #include <msquic.h>
 
 #define BUFFER_SIZE 2048
@@ -47,13 +48,19 @@ static QUIC_STATUS QUIC_API ConnectionCallback(HQUIC Connection, void *Context, 
 }
 
 int main(int argc, char **argv) {
+    const char *server;
+    uint16_t port;
+    const char *topic;
     if (argc != 4) {
-        fprintf(stderr, "Usage: %s <broker_ip> <port> <TOPIC>\n", argv[0]);
-        return 1;
+        fprintf(stderr, "[subscriber_quic] Using defaults: 127.0.0.1 8080 A_vs_B\n");
+        server = "127.0.0.1";
+        port = 8080;
+        topic = "A_vs_B";
+    } else {
+        server = argv[1];
+        port = (uint16_t)atoi(argv[2]);
+        topic = argv[3];
     }
-    const char *server = argv[1];
-    uint16_t port = (uint16_t)atoi(argv[2]);
-    const char *topic = argv[3];
 
     if (MsQuicOpen(&MsQuic) != QUIC_STATUS_SUCCESS) return 1;
     QUIC_REGISTRATION_CONFIG regConfig = { "subscriber-quic", QUIC_EXECUTION_PROFILE_LOW_LATENCY };

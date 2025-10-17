@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <arpa/inet.h>
 #include <msquic.h>
 
 #define MAX_CLIENTS 64
@@ -142,12 +143,16 @@ static QUIC_STATUS QUIC_API ListenerCallback(HQUIC ListenerHandle, void *Context
 }
 
 int main(int argc, char **argv) {
+    const char *bind_ip;
+    uint16_t port;
     if (argc != 3) {
-        fprintf(stderr, "Usage: %s <bind_ip> <port>\n", argv[0]);
-        return 1;
+        fprintf(stderr, "[broker_quic] Using defaults: 0.0.0.0 8080\n");
+        bind_ip = "0.0.0.0";
+        port = 8080;
+    } else {
+        bind_ip = argv[1];
+        port = (uint16_t)atoi(argv[2]);
     }
-    const char *bind_ip = argv[1];
-    uint16_t port = (uint16_t)atoi(argv[2]);
 
     if (MsQuicOpen(&MsQuic) != QUIC_STATUS_SUCCESS) return 1;
     QUIC_REGISTRATION_CONFIG regConfig = { "broker-quic", QUIC_EXECUTION_PROFILE_LOW_LATENCY };
@@ -161,18 +166,17 @@ int main(int argc, char **argv) {
     settings.ServerResumptionLevel = QUIC_SERVER_RESUME_AND_ZERORTT;
 
     if (MsQuic->ConfigurationOpen(Registration, &alpnBuffer, 1, &settings, sizeof(settings), NULL, &Configuration) != QUIC_STATUS_SUCCESS) return 1;
-    if (MsQuic->ConfigurationLoadCredential(Configuration, &(QUIC_CREDENTIAL_CONFIG){ .Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_HASH, .Flags = QUIC_CREDENTIAL_FLAG_NONE }) != QUIC_STATUS_SUCCESS) return 1;
+    QUIC_CREDENTIAL_CONFIG cred = {0};
+    cred.Type = QUIC_CREDENTIAL_TYPE_NONE;
+    cred.Flags = QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION; /* lab mode */
+    if (MsQuic->ConfigurationLoadCredential(Configuration, &cred) != QUIC_STATUS_SUCCESS) return 1;
 
     if (MsQuic->ListenerOpen(Registration, ListenerCallback, NULL, &Listener) != QUIC_STATUS_SUCCESS) return 1;
 
-    QUIC_ADDR addr;
-    QuicAddrSetFamily(&addr, QUIC_ADDRESS_FAMILY_INET);
-    QuicAddrSetPort(&addr, port);
-    if (strcmp(bind_ip, "0.0.0.0") == 0) {
-        QuicAddrSetWildcard(&addr, QUIC_ADDRESS_FAMILY_INET);
-    } else {
-        QuicAddrSetAddress(&addr, inet_addr(bind_ip));
-    }
+    QUIC_ADDR addr; memset(&addr, 0, sizeof(addr));
+    addr.Ipv4.sin_family = QUIC_ADDRESS_FAMILY_INET;
+    addr.Ipv4.sin_port = htons(port);
+    addr.Ipv4.sin_addr.s_addr = (strcmp(bind_ip, "0.0.0.0") == 0) ? htonl(INADDR_ANY) : inet_addr(bind_ip);
 
     QUIC_BUFFER alpnBuffer2 = { (uint32_t)strlen(alpn), (uint8_t *)alpn };
     if (MsQuic->ListenerStart(Listener, &alpnBuffer2, 1, &addr) != QUIC_STATUS_SUCCESS) return 1;
