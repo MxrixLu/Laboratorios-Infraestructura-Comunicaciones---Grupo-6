@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
         port = (uint16_t)atoi(argv[2]);
     }
 
-    if (MsQuicOpen(&MsQuic) != QUIC_STATUS_SUCCESS) return 1;
+    if (MsQuicOpen2(&MsQuic) != QUIC_STATUS_SUCCESS) return 1;
     QUIC_REGISTRATION_CONFIG regConfig = { "broker-quic", QUIC_EXECUTION_PROFILE_LOW_LATENCY };
     if (MsQuic->RegistrationOpen(&regConfig, &Registration) != QUIC_STATUS_SUCCESS) return 1;
 
